@@ -28,15 +28,15 @@
   resolved "https://registry.yarnpkg.com/@babylonjs/gui-editor/-/gui-editor-5.25.0.tgz#57fe641a8806a89cd72679d545c0b85ab68b0420"
   integrity sha512-OAvVuDzSOns26FbUU+TUncb/7RFJuULxC9xg8JxNjHoXKONOXcKAY7m7ATeJrvS4FOX6RGSZ9QGemJzGMu6GZg==
 
-"@babylonjs/gui@^5.19.0":
-  version "5.25.0"
-  resolved "https://registry.yarnpkg.com/@babylonjs/gui/-/gui-5.25.0.tgz#e7f697c3c64ba5aa5a23d7ad449ea416054b2776"
-  integrity sha512-1yd7PAmyYwyL1khBo0qzb32NUxxkN3Kw15BPsgkN6l+qlu7mQug3GFPEH8eyBHLLZgVsFwrZK8fN7LPRJqQNrg==
+"@babylonjs/gui@^6.15.0":
+  version "6.15.0"
+  resolved "https://registry.yarnpkg.com/@babylonjs/gui/-/gui-6.15.0.tgz#ba4e36a32d110c6fce59e43091d59278a9a7ebd9"
+  integrity sha512-WkR/r8wLbKyzUuXUgcWVaTZO5drxQ8YjkstDRz/ZrhfOTIEFDpidd7onDhaQ9wmekQEpFHcKJejJ1/MLXYLwAg==
 
-"@babylonjs/inspector@^5.19.0":
-  version "5.25.0"
-  resolved "https://registry.yarnpkg.com/@babylonjs/inspector/-/inspector-5.25.0.tgz#3c3953fdc0a4db3d422899c011894d724aaec5c8"
-  integrity sha512-E5PKLVasE9wRfyAM8t/+2KfbS0UwJvnOOFNkHOQS/Sajk8xhiH/0sIqEXHw2DP24z7r4g0/PZK3zmXtEulzyFg==
+"@babylonjs/inspector@^6.15.0":
+  version "6.15.0"
+  resolved "https://registry.yarnpkg.com/@babylonjs/inspector/-/inspector-6.15.0.tgz#58e7a8663f57c2c65cb196974675a0d660648b5b"
+  integrity sha512-wN1jVC+gxQDcLL/dyuIMbedPZpxTHNW9gto82jvgyjXLIUKOWiQUVJS7moaLhTM27BMWBrHMfG+K4RnsnKEW9A==
   dependencies:
     "@fortawesome/fontawesome-svg-core" "^6.1.0"
     "@fortawesome/free-regular-svg-icons" "^6.0.0"

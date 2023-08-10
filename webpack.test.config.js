@@ -35,6 +35,11 @@ module.exports = {
             directory: resolve(__dirname, 'test'),
         },
         port: 8080,
+        host: '0.0.0.0',
+        https: true,
+        client: {
+            overlay: false,
+        },
     },
     optimization: {
         splitChunks: {
