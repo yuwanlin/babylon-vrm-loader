@@ -5,11 +5,12 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { PointLight } from '@babylonjs/core/Lights/pointLight';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math';
+import { Color3, Color4, Quaternion, Vector3 } from '@babylonjs/core/Maths/math';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Scene } from '@babylonjs/core/scene';
 import type { VRMManager } from '../vrm-manager';
-import { WebXRFeatureName, SkeletonViewer } from '@babylonjs/core';
+import { WebXRFeatureName, SkeletonViewer, WebXRHand, HandPart, AmmoJSPlugin, StandardMaterial, XRHandJoint as WebXRHandJoint, AxesViewer } from '@babylonjs/core';
+import type { WebXRHandTracking } from '@babylonjs/core';
 
 import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Meshes/Builders/sphereBuilder';
@@ -68,6 +69,7 @@ async function main() {
     //     shadowGenerator.addShadowCaster(shadowCaster);
     // }
 
+    new AxesViewer();
     if (debugProperties.inspector) {
         await scene.debugLayer.show({
             globalRoot: document.getElementById('wrapper') as HTMLElement,
@@ -94,9 +96,10 @@ async function main() {
     window.addEventListener('resize', () => {
         engine.resize();
     });
-    SceneLoader.AppendAsync('./', 'AliciaSolid.vrm', scene).then((scene: Scene) => {
+    SceneLoader.AppendAsync('./', 'K-00502.vrm', scene).then((scene: Scene) => {
         // console.log('==========', scene.metadata.vrmManagers);
         const manager = scene.metadata.vrmManagers[0];
+        console.log('VRMManager', manager);
         addUI(manager);
         makePose(manager);
         console.log('aaa', scene, manager);
@@ -125,14 +128,57 @@ async function main() {
         // );
     });
 
+    // @ts-ignore
+    await window.Ammo().catch((err) => alert(err));
+    scene.enablePhysics(undefined, new AmmoJSPlugin());
     const xr = await scene.createDefaultXRExperienceAsync();
     xr.input.onControllerAddedObservable.add((inputSource) => {
         inputSource.onMotionControllerInitObservable.add((motionController) => {
             motionController.handness;
+            console.log('=======handness', motionController.handness);
         });
     });
-    xr.baseExperience.featuresManager.enableFeature(WebXRFeatureName.HAND_TRACKING, 'latest', {
+    const xrHandFeature = xr.baseExperience.featuresManager.enableFeature(WebXRFeatureName.HAND_TRACKING, 'latest', {
         xrInput: xr.input,
+        jointMeshes: {
+            disableDefaultHandMesh: true,
+            enablePhysics: true,
+        },
+    }) as unknown as WebXRHandTracking;
+
+    // scene.onPointerObservable.add((evt) => {
+    //     const pointerId = (evt.event as any).pointerId;
+
+    //     const xrController = xr.pointerSelection.getXRControllerByPointerId(pointerId);
+    //     // const webXrHand = xrHandFeature.getHandByControllerId(xrController!.uniqueId);
+    //     // webXrHand;
+    //     // console.log('=======', xrController?.uniqueId);
+    // });
+    let leftHand: WebXRHand;
+    let rightHand: WebXRHand;
+    xrHandFeature.onHandAddedObservable.add((newHand: WebXRHand) => {
+        const wristMeshes = newHand.getHandPartMeshes(HandPart.WRIST);
+        // @ts-ignore
+        const handedness = newHand.xrController.inputSource.handedness as XRHandedness;
+        if (handedness === 'none') return;
+        if (handedness === 'left') {
+            leftHand = newHand;
+            const wristMesh = newHand.getJointMesh(WebXRHandJoint.WRIST);
+        } else {
+            rightHand = newHand;
+        }
+    });
+
+    scene.onBeforeRenderObservable.add(() => {
+        // if (leftHand && rightHand) console.log('=========', leftHand, rightHand);
+        if (rightHand) {
+            const wristMesh = rightHand.getJointMesh(WebXRHandJoint.WRIST);
+            // console.log('aaaaaaaaaa', wristMesh.position.x);
+            // @ts-ignore
+            rightHand._jointMeshes.forEach((res) => {
+                // console.log(res.position.x);
+            });
+        }
     });
 
     // scene.enable
@@ -244,28 +290,34 @@ async function main() {
             leftUpperArm: Quaternion.FromEulerAngles(0, 0, 0),
             leftLowerArm: Quaternion.FromEulerAngles(0, 0, Math.PI / 4),
             leftHand: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftThumbProximal: Quaternion.FromEulerAngles(0, 0, 0),
             leftThumbIntermediate: Quaternion.FromEulerAngles(0, 0, 0),
             leftThumbDistal: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftIndexProximal: Quaternion.FromEulerAngles(0, 0, 0),
             leftIndexIntermediate: Quaternion.FromEulerAngles(0, 0, 0),
             leftIndexDistal: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftMiddleProximal: Quaternion.FromEulerAngles(0, 0, 0),
             leftMiddleIntermediate: Quaternion.FromEulerAngles(0, 0, 0),
             leftMiddleDistal: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftRingProximal: Quaternion.FromEulerAngles(0, 0, 0),
             leftRingIntermediate: Quaternion.FromEulerAngles(0, 0, 0),
             leftRingDistal: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftLittleProximal: Quaternion.FromEulerAngles(0, 0, 0),
             leftLittleIntermediate: Quaternion.FromEulerAngles(0, 0, 0),
             leftLittleDistal: Quaternion.FromEulerAngles(0, 0, 0),
+
             leftUpperLeg: Quaternion.FromEulerAngles(0, 0, 0),
             leftLowerLeg: Quaternion.FromEulerAngles(0, 0, 0),
             leftFoot: Quaternion.FromEulerAngles(0, 0, 0),
             leftToe: Quaternion.FromEulerAngles(0, 0, 0),
             rightEye: Quaternion.FromEulerAngles(0, 0, 0),
             rightShoulder: Quaternion.FromEulerAngles(0, Math.PI / 6, 0),
-            rightUpperArm: Quaternion.FromEulerAngles(0, Math.PI / 4, 0),
+            rightUpperArm: Quaternion.FromEulerAngles(0, 0, 0),
             rightLowerArm: Quaternion.FromEulerAngles(0, Math.PI / 8, 0),
             rightHand: Quaternion.FromEulerAngles(0, 0, Math.PI / 2),
             rightThumbProximal: Quaternion.FromEulerAngles(-Math.PI / 8, -Math.PI / 4, 0),
@@ -311,7 +363,7 @@ function getDebugProperties(): DebugProperties {
 
     return {
         webgl1: href.includes('webgl1'),
-        shadow: true,
+        shadow: false,
         inspector: true,
     };
 
