@@ -174,10 +174,12 @@ async function main() {
         if (rightHand) {
             const wristMesh = rightHand.getJointMesh(WebXRHandJoint.WRIST);
             // console.log('aaaaaaaaaa', wristMesh.position.x);
-            // @ts-ignore
-            rightHand._jointMeshes.forEach((res) => {
-                // console.log(res.position.x);
-            });
+            console.log('=========渲染四元数', wristMesh.rotationQuaternion, scene.metadata.vrmManagers[0].humanoidBone['rightHand'].rotationQuaternion);
+            scene.metadata.vrmManagers[0].humanoidBone['rightHand'].rotationQuaternion = wristMesh.rotationQuaternion;
+
+            // rightHand._jointMeshes.forEach((res) => {
+            //     // console.log(res.position.x);
+            // });
         }
     });
 
