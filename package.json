@@ -1,51 +1,47 @@
 {
-    "name": "babylon-vrm-loader",
-    "version": "2.0.0",
-    "description": "babylon.js VRM Loader",
-    "license": "MIT",
-    "author": {
-        "email": "yamagishi.iloop@gmail.com",
-        "name": "Masaru Yamagishi",
-        "url": "https://github.com/il-m-yamagishi"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/virtual-cast/babylon-vrm-loader.git"
-    },
+    "name": "babylonjs-vrm-loader",
+    "version": "0.0.9",
     "keywords": [
         "babylon.js",
         "VRM"
     ],
     "files": [
         "dist/**/*",
-        "!dist/test/**/*"
+        "!dist/test/**/*",
+        "README.md",
+        "package.json"
     ],
     "typings": "dist/index.d.ts",
-    "main": "dist/index.module.js",
-    "dependencies": {
-        "ammo.js": "^0.0.10",
-        "babylon-mtoon-material": "^5.0.0"
+    "main": "dist/index.umd.js",
+    "scripts": {
+        "build:mtoon": "pnpm -F babylonjs-mtoon-material run build",
+        "build": "pnpm run build:mtoon && webpack",
+        "build:test": "pnpm run build:mtoon && webpack --config webpack.test.config.js",
+        "dev": "pnpm run build:mtoon && webpack serve --config webpack.test.config.js"
     },
     "devDependencies": {
-        "@babylonjs/core": "5.19.0",
-        "@babylonjs/gui": "5.19.0",
-        "@babylonjs/gui-editor": "5.19.0",
-        "@babylonjs/inspector": "5.19.0",
-        "@babylonjs/loaders": "5.19.0",
-        "@babylonjs/materials": "5.19.0",
-        "@babylonjs/serializers": "5.19.0",
+        "@babylonjs/core": "6.8.0",
+        "@babylonjs/gui": "6.8.0",
+        "@babylonjs/gui-editor": "6.8.0",
+        "@babylonjs/inspector": "6.8.0",
+        "@babylonjs/loaders": "6.8.0",
+        "@babylonjs/materials": "6.8.0",
+        "@babylonjs/serializers": "6.8.0",
         "@semantic-release/git": "^10.0.1",
         "@types/node": "^15.12.2",
         "@typescript-eslint/eslint-plugin": "~5.16.0",
         "@typescript-eslint/parser": "~5.16.0",
-        "babylonjs-gltf2interface": "^5.0.0",
+        "ansi-html-community": "^0.0.8",
+        "babylonjs-gltf2interface": "6.8.0",
+        "babylonjs-mtoon-material": "workspace:*",
         "cz-conventional-changelog": "3.3.0",
         "eslint": "^8.11.0",
         "eslint-config-prettier": "~8.5.0",
         "eslint-plugin-import": "~2.26.0",
         "eslint-plugin-prettier": "~4.0.0",
+        "events": "^3.3.0",
         "gh-pages": "^4.0.0",
-        "node-polyfill-webpack-plugin": "^2.0.1",
+        "html-entities": "^2.4.0",
         "prettier": "^2.7.1",
         "semantic-release": "^19.0.3",
         "ts-loader": "^9.2.6",
@@ -56,53 +52,8 @@
         "webpack-dev-server": "^4.9.3",
         "webpack-merge": "^5.8.0"
     },
-    "scripts": {
-        "build": "webpack",
-        "build:gh-pages": "webpack serve --config webpack.test.config.js",
-        "dev": "yarn build:gh-pages",
-        "lint": "yarn lint:check && yarn lint:fix",
-        "lint:check": "eslint src",
-        "lint:fix": "eslint src --fix",
-        "format": "yarn format:check && yarn format:fix",
-        "format:check": "prettier --check src",
-        "format:fix": "prettier --write src",
-        "debug": "webpack serve --config webpack.test.config.js",
-        "release": "semantic-release",
-        "release:gh-pages": "gh-pages -d test -u \"Masaru Yamagishi <m-yamagishi@virtualcast.jp>\" -m \"ci(gh-pages): update gh-pages [skip ci]\""
-    },
-    "sideEffects": [
-        "dist/index.js",
-        "dist/index.module.js",
-        "src/vcast-vci-material-unity.ts",
-        "src/vrm-extension.ts",
-        "src/vrm-file-loader.ts"
-    ],
-    "config": {
-        "commitizen": {
-            "path": "./node_modules/cz-conventional-changelog"
-        }
-    },
-    "release": {
-        "plugins": [
-            "@semantic-release/commit-analyzer",
-            "@semantic-release/release-notes-generator",
-            [
-                "@semantic-release/github",
-                {
-                    "assets": [
-                        [
-                            "dist/index.js",
-                            "dist/index.module.js"
-                        ]
-                    ]
-                }
-            ],
-            "@semantic-release/npm",
-            "@semantic-release/git"
-        ]
-    },
     "peerDependencies": {
-        "@babylonjs/core": "5.19.0",
-        "@babylonjs/loaders": "5.19.0"
+        "@babylonjs/core": "6.8.0",
+        "@babylonjs/loaders": "6.8.0"
     }
 }

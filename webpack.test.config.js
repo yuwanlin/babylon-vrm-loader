@@ -1,5 +1,4 @@
 const { resolve } = require('path');
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 
 module.exports = {
     mode: 'development',
@@ -7,7 +6,7 @@ module.exports = {
     entry: resolve(__dirname, 'src', 'test', 'index'),
     output: {
         library: {
-            name: 'babylon-vrm-loader',
+            name: 'babylonjs-vrm-loader',
             type: 'umd',
         },
         filename: '[name].js',
@@ -15,6 +14,10 @@ module.exports = {
     },
     module: {
         rules: [
+            {
+                test: /\.(vert|frag)$/,
+                type: 'asset/source',
+            },
             {
                 test: /\.ts$/,
                 loader: 'ts-loader',
@@ -29,14 +32,14 @@ module.exports = {
     },
     resolve: {
         modules: [resolve(__dirname, 'node_modules')],
-        extensions: ['.js', '.ts'],
+        extensions: ['.js', '.ts', '.vert', '.frag'],
     },
     devServer: {
+        host: '0.0.0.0',
         static: {
             directory: resolve(__dirname, 'test'),
         },
         port: 8080,
-        host: '0.0.0.0',
         https: true,
         client: {
             overlay: false,
@@ -56,5 +59,4 @@ module.exports = {
         },
     },
     target: 'web',
-    plugins: [new NodePolyfillPlugin()],
 };

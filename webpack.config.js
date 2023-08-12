@@ -7,6 +7,10 @@ const baseConfig = {
     module: {
         rules: [
             {
+                test: /\.(vert|frag)$/,
+                type: 'asset/source',
+            },
+            {
                 test: /\.ts$/,
                 loader: 'ts-loader',
             },
@@ -14,7 +18,7 @@ const baseConfig = {
     },
     resolve: {
         modules: [resolve(__dirname, 'node_modules')],
-        extensions: ['.js', '.ts'],
+        extensions: ['.js', '.ts', '.vert', '.frag'],
     },
     target: 'web',
 };
@@ -26,10 +30,10 @@ module.exports = [
     merge(baseConfig, {
         output: {
             library: {
-                name: 'babylon-vrm-loader',
+                name: 'babylonjs-vrm-loader',
                 type: 'umd',
             },
-            filename: 'index.module.js',
+            filename: 'index.umd.js',
             path: resolve(__dirname, 'dist'),
         },
         externals: [
@@ -45,7 +49,7 @@ module.exports = [
                 name: 'VRMLoader',
                 type: 'window',
             },
-            filename: 'index.js',
+            filename: 'index.window.js',
             path: resolve(__dirname, 'dist'),
         },
         externals: [

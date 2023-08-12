@@ -5,12 +5,10 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { PointLight } from '@babylonjs/core/Lights/pointLight';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import { Color3, Color4, Quaternion, Vector3 } from '@babylonjs/core/Maths/math';
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Scene } from '@babylonjs/core/scene';
 import type { VRMManager } from '../vrm-manager';
-import { WebXRFeatureName, SkeletonViewer, WebXRHand, HandPart, AmmoJSPlugin, StandardMaterial, XRHandJoint as WebXRHandJoint, AxesViewer } from '@babylonjs/core';
-import type { WebXRHandTracking } from '@babylonjs/core';
 
 import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Meshes/Builders/sphereBuilder';
@@ -18,8 +16,8 @@ import '@babylonjs/core/Meshes/Builders/torusKnotBuilder';
 import '@babylonjs/inspector';
 // eslint-disable-next-line import/no-internal-modules
 import '../index';
+import { AmmoJSPlugin, HandPart, WebXRFeatureName, WebXRHand, WebXRHandJoint, WebXRHandTracking } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock } from '@babylonjs/gui';
-import * as Debug from '@babylonjs/inspector';
 
 async function main() {
     const debugProperties = getDebugProperties();
@@ -45,8 +43,6 @@ async function main() {
         enableGroundShadow: false,
     });
 
-    console.log('===========Debug', Debug);
-
     // Lights
     const directionalLight = new DirectionalLight('DirectionalLight1', new Vector3(0, -0.5, 1.0), scene);
     directionalLight.position = new Vector3(0, 25, -50);
@@ -57,19 +53,18 @@ async function main() {
     pointLight.setEnabled(false);
 
     // Meshes
-    // const standardMaterialSphere = Mesh.CreateSphere('StandardMaterialSphere1', 16, 1, scene);
-    // standardMaterialSphere.position = new Vector3(1.5, 1.2, 0);
-    // standardMaterialSphere.receiveShadows = true;
+    const standardMaterialSphere = Mesh.CreateSphere('StandardMaterialSphere1', 16, 1, scene);
+    standardMaterialSphere.position = new Vector3(1.5, 1.2, 0);
+    standardMaterialSphere.receiveShadows = true;
 
-    // const shadowCaster = Mesh.CreateTorusKnot('ShadowCaster', 1, 0.2, 32, 32, 2, 3, scene);
-    // shadowCaster.position = new Vector3(0.0, 5.0, -10.0);
-    // shadowCaster.setEnabled(debugProperties.shadow);
-    // if (debugProperties.shadow) {
-    //     const shadowGenerator = new ShadowGenerator(1024, directionalLight);
-    //     shadowGenerator.addShadowCaster(shadowCaster);
-    // }
+    const shadowCaster = Mesh.CreateTorusKnot('ShadowCaster', 1, 0.2, 32, 32, 2, 3, scene);
+    shadowCaster.position = new Vector3(0.0, 5.0, -10.0);
+    shadowCaster.setEnabled(debugProperties.shadow);
+    if (debugProperties.shadow) {
+        const shadowGenerator = new ShadowGenerator(1024, directionalLight);
+        shadowGenerator.addShadowCaster(shadowCaster);
+    }
 
-    new AxesViewer();
     if (debugProperties.inspector) {
         await scene.debugLayer.show({
             globalRoot: document.getElementById('wrapper') as HTMLElement,
@@ -78,6 +73,7 @@ async function main() {
 
     // Expose current scene
     (window as any).currentScene = scene;
+
     scene.onBeforeRenderObservable.add(() => {
         // SpringBone
         if (!scene.metadata || !scene.metadata.vrmManagers) {
@@ -91,41 +87,19 @@ async function main() {
     });
     engine.runRenderLoop(() => {
         scene.render();
-        // shadowCaster.rotate(Vector3.Up(), 0.01);
+        shadowCaster.rotate(Vector3.Up(), 0.01);
     });
     window.addEventListener('resize', () => {
         engine.resize();
     });
-    SceneLoader.AppendAsync('./', 'K-00502.vrm', scene).then((scene: Scene) => {
+    // await SceneLoader.ImportMeshAsync('', './AliciaSolid.vrm', '', scene);
+    SceneLoader.AppendAsync('./', 'AliciaSolid.vrm', scene).then((scene: Scene) => {
         // console.log('==========', scene.metadata.vrmManagers);
         const manager = scene.metadata.vrmManagers[0];
         console.log('VRMManager', manager);
         addUI(manager);
         makePose(manager);
         console.log('aaa', scene, manager);
-
-        let options = {
-            pauseAnimations: false,
-            returnToRest: false,
-            computeBonesUsingShaders: true,
-            useAllBones: false,
-            displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
-            displayOptions: {
-                sphereBaseSize: 1,
-                sphereScaleUnit: 10,
-                sphereFactor: 0.9,
-                midStep: 0.25,
-                midStepFactor: 0.05,
-            },
-        };
-        // let skeletonView = new SkeletonViewer(
-        //     manager.skeleton,
-        //     mesh,
-        //     scene,
-        //     false, //autoUpdateBoneMatrices?
-        //     (mesh.renderingGroupId > 0 )?mesh.renderingGroupId+1:1,  // renderingGroup
-        //     options
-        // );
     });
 
     // @ts-ignore
@@ -183,8 +157,6 @@ async function main() {
         }
     });
 
-    // scene.enable
-
     // let fileCount = 1;
     // (document.getElementById('file-input') as HTMLInputElement).addEventListener('change', (evt) => {
     //     const file = (evt as any).target.files[0];
@@ -199,7 +171,6 @@ async function main() {
     //         fileCount++;
     //     });
     // });
-
     function addUI(manager: VRMManager) {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI');
         console.log('advancedDynamicTexture.layer', advancedTexture.layer);
@@ -362,12 +333,6 @@ interface DebugProperties {
 
 function getDebugProperties(): DebugProperties {
     const href = window.location.href;
-
-    return {
-        webgl1: href.includes('webgl1'),
-        shadow: false,
-        inspector: true,
-    };
 
     return {
         webgl1: href.includes('webgl1'),

@@ -93,7 +93,7 @@
         // }],
         // "no-duplicate-imports": ["error", { "includeExports": true }],
         // should be error, no?
-        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/consistent-type-imports": ["error", { "disallowTypeAnnotations": false }],
         "@typescript-eslint/no-this-alias": "error",
         // "@typescript-eslint/naming-convention": [
