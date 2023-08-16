@@ -100,11 +100,6 @@ async function main() {
     const pointLight = new PointLight('PointLight1', new Vector3(0, 0, 1), scene);
     pointLight.setEnabled(false);
 
-    // Meshes
-    // const standardMaterialSphere = Mesh.CreateSphere('StandardMaterialSphere1', 16, 1, scene);
-    // standardMaterialSphere.position = new Vector3(1.5, 1.2, 0);
-    // standardMaterialSphere.receiveShadows = true;
-
     const shadowCaster = Mesh.CreateTorusKnot('ShadowCaster', 1, 0.2, 32, 32, 2, 3, scene);
     shadowCaster.position = new Vector3(0.0, 5.0, -10.0);
     shadowCaster.setEnabled(debugProperties.shadow);
@@ -143,36 +138,11 @@ async function main() {
     });
     // await SceneLoader.ImportMeshAsync('', './AliciaSolid.vrm', '', scene);
     SceneLoader.AppendAsync('./', 'K-00510.vrm', scene).then((scene: Scene) => {
-        // console.log('==========', scene.metadata.vrmManagers);
-        const manager = scene.metadata.vrmManagers[0];
         const rootMesh = scene.getMeshByName('__root__')!;
-
-        const handMesh = scene.getTransformNodeByName('RightHand')!;
-        const rightIndex1 = scene.getTransformNodeByName('RightHandIndex1')!;
-        const rightIndex2 = scene.getTransformNodeByName('RightHandIndex2')!;
-
-        const vectorAB = handMesh.position.subtract(rightIndex1.position);
-        const angleRadians = Math.atan2(vectorAB.z, vectorAB.x);
-
-        // 将弧度转换为角度
-        const angleDegrees = Tools.ToDegrees(angleRadians);
-
-        // console.log(angleDegrees); // 输出：45
-
-        const angle = getAngle(rightIndex1, handMesh, rightIndex2);
-        console.log('初始角度', angleDegrees);
-
-        // handMesh.scaling = new Vector3(2, 2, 2);
-        // const localOrigin = localAxes(0.5, scene);
-        // localOrigin.parent = handMesh;
-
         const bone = scene.metadata.vrmManagers[0].humanoidBone;
-
         bone.rightLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
-        console.log('key', bone, bone.rightLowerArm);
-        // bone['rightThumbIntermediate'].rotationQuaternion = Quaternion.FromEulerAngles(ToRadians(-50), ToRadians(-50), ToRadians(-50));
-        // bone['rightThumbIntermediate'].rotate(new Vector3(1, 1, 1), -Math.PI / 1.5, Space.LOCAL);
-        // localAxes(0.5, scene).parent = bone['rightIndexProximal'];
+        bone.leftLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+
         // makePose(manager);
     });
 
@@ -264,8 +234,7 @@ async function main() {
         return angle;
     }
 
-    function makeRightHandSync(hand: WebXRHand) {
-        const bone = scene.metadata.vrmManagers[0].humanoidBone;
+    function getPersonJoint(hand: WebXRHand) {
         const wristMesh0 = hand.getJointMesh(WebXRHandJoint.WRIST); // 手腕
         const thumb1 = hand.getJointMesh(WebXRHandJoint.THUMB_METACARPAL); // 拇指
         const thumb2 = hand.getJointMesh(WebXRHandJoint.THUMB_PHALANX_PROXIMAL);
@@ -291,10 +260,132 @@ async function main() {
         const little22 = hand.getJointMesh(WebXRHandJoint.PINKY_FINGER_PHALANX_INTERMEDIATE);
         const little23 = hand.getJointMesh(WebXRHandJoint.PINKY_FINGER_PHALANX_DISTAL);
         const little24 = hand.getJointMesh(WebXRHandJoint.PINKY_FINGER_TIP);
+        return {
+            wristMesh0,
+            thumb1,
+            thumb2,
+            thumb3,
+            thumb4,
+            index5,
+            index6,
+            index7,
+            index8,
+            index9,
+            middle10,
+            middle11,
+            middle12,
+            middle13,
+            middle14,
+            ring15,
+            ring16,
+            ring17,
+            ring18,
+            ring19,
+            little20,
+            little21,
+            little22,
+            little23,
+            little24,
+        };
+    }
 
-        // 获得index6夹角
+    function makeLeftHandSync(hand: WebXRHand) {
+        const bone = scene.metadata.vrmManagers[0].humanoidBone;
+        const {
+            wristMesh0,
+            thumb1,
+            thumb2,
+            thumb3,
+            thumb4,
+            index5,
+            index6,
+            index7,
+            index8,
+            index9,
+            middle10,
+            middle11,
+            middle12,
+            middle13,
+            middle14,
+            ring15,
+            ring16,
+            ring17,
+            ring18,
+            ring19,
+            little20,
+            little21,
+            little22,
+            little23,
+            little24,
+        } = getPersonJoint(hand);
 
-        // const angle = Vector3.GetAngleBetweenVectors(line1, line2, normal);
+        const wristEa = wristMesh0.rotationQuaternion?.toEulerAngles()!;
+        // 手腕
+        {
+            bone['leftHand'].rotationQuaternion = Quaternion.FromEulerAngles(wristEa.z, -wristEa.y, wristEa.x);
+        }
+        // 拇指
+        {
+            setModalJointYAxis(bone['leftThumbProximal'], [thumb1, wristMesh0, thumb2], 'left');
+            setModalJointYAxis(bone['leftThumbIntermediate'], [thumb2, thumb1, thumb3], 'left');
+            setModalJointYAxis(bone['leftThumbDistal'], [thumb3, thumb2, thumb4], 'left');
+        }
+        // 食指
+        {
+            setModalJointZAxis(bone['leftIndexProximal'], [index6, index5, index7], 'left');
+            setModalJointZAxis(bone['leftIndexIntermediate'], [index7, index6, index8], 'left');
+            setModalJointZAxis(bone['leftIndexDistal'], [index8, index7, index9], 'left');
+        }
+
+        // 中指
+        {
+            setModalJointZAxis(bone['leftMiddleProximal'], [middle11, middle10, middle12], 'left');
+            setModalJointZAxis(bone['leftMiddleIntermediate'], [middle12, middle11, middle13], 'left');
+            setModalJointZAxis(bone['leftMiddleDistal'], [middle13, middle12, middle14], 'left');
+        }
+        // 无名指
+        {
+            setModalJointZAxis(bone['leftRingProximal'], [ring16, ring15, ring17], 'left');
+            setModalJointZAxis(bone['leftRingIntermediate'], [ring17, ring16, ring18], 'left');
+            setModalJointZAxis(bone['leftRingDistal'], [ring18, ring17, ring19], 'left');
+        }
+        // 小指
+        {
+            setModalJointZAxis(bone['leftLittleProximal'], [little21, little20, little22], 'left');
+            setModalJointZAxis(bone['leftLittleIntermediate'], [little22, little21, little23], 'left');
+            setModalJointZAxis(bone['leftLittleDistal'], [little23, little22, little24], 'left');
+        }
+    }
+
+    function makeRightHandSync(hand: WebXRHand) {
+        const bone = scene.metadata.vrmManagers[0].humanoidBone;
+        const {
+            wristMesh0,
+            thumb1,
+            thumb2,
+            thumb3,
+            thumb4,
+            index5,
+            index6,
+            index7,
+            index8,
+            index9,
+            middle10,
+            middle11,
+            middle12,
+            middle13,
+            middle14,
+            ring15,
+            ring16,
+            ring17,
+            ring18,
+            ring19,
+            little20,
+            little21,
+            little22,
+            little23,
+            little24,
+        } = getPersonJoint(hand);
 
         const wristEa = wristMesh0.rotationQuaternion?.toEulerAngles()!;
         // 手腕
@@ -303,70 +394,63 @@ async function main() {
         }
         // 拇指
         {
-            setModalJointYAxis(bone['rightThumbProximal'], [thumb1, wristMesh0, thumb2]);
-            setModalJointYAxis(bone['rightThumbIntermediate'], [thumb2, thumb1, thumb3]);
-            setModalJointYAxis(bone['rightThumbDistal'], [thumb3, thumb2, thumb4]);
+            setModalJointYAxis(bone['rightThumbProximal'], [thumb1, wristMesh0, thumb2], 'right');
+            setModalJointYAxis(bone['rightThumbIntermediate'], [thumb2, thumb1, thumb3], 'right');
+            setModalJointYAxis(bone['rightThumbDistal'], [thumb3, thumb2, thumb4], 'right');
         }
         // 食指
         {
-            setModalJointZAxis(bone['rightIndexProximal'], [index6, index5, index7]);
-            setModalJointZAxis(bone['rightIndexIntermediate'], [index7, index6, index8]);
-            setModalJointZAxis(bone['rightIndexDistal'], [index8, index7, index9]);
+            setModalJointZAxis(bone['rightIndexProximal'], [index6, index5, index7], 'right');
+            setModalJointZAxis(bone['rightIndexIntermediate'], [index7, index6, index8], 'right');
+            setModalJointZAxis(bone['rightIndexDistal'], [index8, index7, index9], 'right');
         }
         // 中指
         {
-            setModalJointZAxis(bone['rightMiddleProximal'], [middle11, middle10, middle12]);
-            setModalJointZAxis(bone['rightMiddleIntermediate'], [middle12, middle11, middle13]);
-            setModalJointZAxis(bone['rightMiddleDistal'], [middle13, middle12, middle14]);
+            setModalJointZAxis(bone['rightMiddleProximal'], [middle11, middle10, middle12], 'right');
+            setModalJointZAxis(bone['rightMiddleIntermediate'], [middle12, middle11, middle13], 'right');
+            setModalJointZAxis(bone['rightMiddleDistal'], [middle13, middle12, middle14], 'right');
         }
         // 无名指
         {
-            setModalJointZAxis(bone['rightRingProximal'], [ring16, ring15, ring17]);
-            setModalJointZAxis(bone['rightRingIntermediate'], [ring17, ring16, ring18]);
-            setModalJointZAxis(bone['rightRingDistal'], [ring18, ring17, ring19]);
+            setModalJointZAxis(bone['rightRingProximal'], [ring16, ring15, ring17], 'right');
+            setModalJointZAxis(bone['rightRingIntermediate'], [ring17, ring16, ring18], 'right');
+            setModalJointZAxis(bone['rightRingDistal'], [ring18, ring17, ring19], 'right');
         }
         // 小指
         {
-            setModalJointZAxis(bone['rightLittleProximal'], [little21, little20, little22]);
-            setModalJointZAxis(bone['rightLittleIntermediate'], [little22, little21, little23]);
-            setModalJointZAxis(bone['rightLittleDistal'], [little23, little22, little24]);
+            setModalJointZAxis(bone['rightLittleProximal'], [little21, little20, little22], 'right');
+            setModalJointZAxis(bone['rightLittleIntermediate'], [little22, little21, little23], 'right');
+            setModalJointZAxis(bone['rightLittleDistal'], [little23, little22, little24], 'right');
         }
     }
 
-    function setModalJointZAxis(modalJoint: any, jointsMesh: AbstractMesh[]) {
-        modalJoint.rotationQuaternion = Quaternion.FromEulerAngles(0, 0, getAngle(jointsMesh[0], jointsMesh[1], jointsMesh[2]) - Math.PI);
+    function setModalJointZAxis(modalJoint: any, jointsMesh: AbstractMesh[], direction: 'left' | 'right') {
+        let angle = getAngle(jointsMesh[0], jointsMesh[1], jointsMesh[2]) - Math.PI;
+        if (direction === 'left') {
+            angle *= -1;
+        }
+        modalJoint.rotationQuaternion = Quaternion.FromEulerAngles(0, 0, angle);
     }
 
-    function setModalJointYAxis(modalJoint: any, jointsMesh: AbstractMesh[]) {
-        modalJoint.rotationQuaternion = Quaternion.FromEulerAngles(0, getAngle(jointsMesh[0], jointsMesh[1], jointsMesh[2]) - Math.PI, 0);
+    function setModalJointYAxis(modalJoint: any, jointsMesh: AbstractMesh[], direction: 'left' | 'right') {
+        let angle = getAngle(jointsMesh[0], jointsMesh[1], jointsMesh[2]) - Math.PI;
+        if (direction === 'left') {
+            angle *= -1;
+        }
+        modalJoint.rotationQuaternion = Quaternion.FromEulerAngles(0, angle, 0);
     }
 
     scene.onBeforeRenderObservable.add(() => {
-        // if (leftHand && rightHand) console.log('=========', leftHand, rightHand);
         // if (!leftHand || !rightHand) return;
 
         if (leftHand) {
-            // makeLeftHandSync(leftHand);
+            makeLeftHandSync(leftHand);
         }
         if (rightHand) {
             makeRightHandSync(rightHand);
         }
     });
 
-    // let fileCount = 1;
-    // (document.getElementById('file-input') as HTMLInputElement).addEventListener('change', (evt) => {
-    //     const file = (evt as any).target.files[0];
-    //     console.log(`loads ${file.name} ${file.size} bytes`);
-    //     const currentMeshCount = scene.meshes.length;
-    //     SceneLoader.Append('file:', file, scene, () => {
-    //         console.log(`loaded ${file.name}`);
-    //         for (let i = currentMeshCount; i < scene.meshes.length; i++) {
-    //             scene.meshes[i].translate(Vector3.Right(), 1.5 * fileCount);
-    //             scene.meshes[i].receiveShadows = true;
-    //         }
-    //         fileCount++;
-    //     });
-    // });
     function addUI(manager: VRMManager) {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI');
         advancedTexture.layer!.layerMask = 2;

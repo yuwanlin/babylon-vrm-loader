@@ -68,6 +68,7 @@
     // },
     "rules": {
         "block-spacing": "error",
+        "object-curly-newline": ["error", { "consistent": true }],
         // "capitalized-comments": ["error", "always"],
         // ... All other rules (not @typescript-eslint/*)
         //   "react/no-adjacent-inline-elements": "error",
