@@ -39,11 +39,17 @@ module.exports = {
         static: {
             directory: resolve(__dirname, 'test'),
         },
-        port: 8080,
+        port: 9988,
         https: true,
+        allowedHosts: 'all',
         client: {
             overlay: false,
         },
+        // proxy: {
+        //     '/hello': {
+        //         target: 'http://127.0.0.1:4173/',
+        //     },
+        // },
     },
     optimization: {
         splitChunks: {
