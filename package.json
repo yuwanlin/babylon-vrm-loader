@@ -34,6 +34,7 @@
         "ansi-html-community": "^0.0.8",
         "babylonjs-gltf2interface": "6.8.0",
         "babylonjs-mtoon-material": "workspace:*",
+        "dat.gui": "^0.7.9",
         "cz-conventional-changelog": "3.3.0",
         "eslint": "^8.11.0",
         "eslint-config-prettier": "~8.5.0",

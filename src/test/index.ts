@@ -14,6 +14,9 @@ import '@babylonjs/core/Helpers/sceneHelpers';
 import '@babylonjs/core/Meshes/Builders/sphereBuilder';
 import '@babylonjs/core/Meshes/Builders/torusKnotBuilder';
 import '@babylonjs/inspector';
+// @ts-ignore
+import * as dat from 'dat.gui';
+
 // eslint-disable-next-line import/no-internal-modules
 import '../index';
 import {
@@ -28,8 +31,13 @@ import {
     WebXRHand,
     WebXRHandJoint,
     WebXRHandTracking,
+    SkeletonViewer,
+    AnimationPropertiesOverride,
+    BoneIKController,
 } from '@babylonjs/core';
+import * as BABYLON from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock, GUI3DManager, StackPanel3D, Button3D } from '@babylonjs/gui';
+
 const { ToRadians, ToDegrees } = Tools;
 
 // @ts-ignore
@@ -77,10 +85,10 @@ async function main() {
 
     const scene = new Scene(engine);
     const camera = new ArcRotateCamera('MainCamera1', 0, 0, 3, new Vector3(0, 1.2, 0), scene, true);
-    camera.lowerRadiusLimit = 0.1;
-    camera.upperRadiusLimit = 20;
+    // camera.lowerRadiusLimit = 0.1;
+    // camera.upperRadiusLimit = 20;
     camera.wheelDeltaPercentage = 0.01;
-    camera.minZ = 0.3;
+    // camera.minZ = 0.1;
     camera.position = new Vector3(0, 1.2, -3);
     camera.attachControl(canvas, true);
 
@@ -136,15 +144,136 @@ async function main() {
     window.addEventListener('resize', () => {
         engine.resize();
     });
-    // await SceneLoader.ImportMeshAsync('', './AliciaSolid.vrm', '', scene);
+
     SceneLoader.AppendAsync('./', 'K-00510.vrm', scene).then((scene: Scene) => {
-        const rootMesh = scene.getMeshByName('__root__')!;
+        const poleTargetSmallBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.12 }, scene);
+        const gui = new dat.GUI();
+        gui.domElement.style.marginTop = '100px';
+        gui.domElement.id = 'datGUI';
+        const rootMesh = scene.getMeshByName('__root__')! as Mesh;
+        const rightHandMesh = scene.getTransformNodeByName('RightHand')!;
+        const bigBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.4 }, scene);
+        console.log('rightHandMesh', rightHandMesh);
+
         const bone = scene.metadata.vrmManagers[0].humanoidBone;
-        bone.rightLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        // bone.rightLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
         bone.leftLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        const skeleton = scene.getSkeletonById('skeleton0');
+
+        // 除以 50
+        poleTargetSmallBall.position.x = 0;
+        poleTargetSmallBall.position.y = 0.4;
+        poleTargetSmallBall.position.z = -1;
+        bigBall.parent = rootMesh;
+        rightHandMesh.parent = rootMesh;
+        poleTargetSmallBall.parent = rootMesh;
+
+        console.log('===', skeleton);
+        const rightForceArm = scene.getBoneByName('RightForeArm')!;
+        const rightArm = scene.getBoneByName('RightArm')!;
+
+        const a = new BABYLON.BoneAxesViewer(scene, rightForceArm, rootMesh, 0.2);
+        const b = new BABYLON.BoneAxesViewer(scene, rightArm, rootMesh, 0.2);
+
+        // 手臂跟着大球旋转，从而肩膀也旋转
+        // bone跟着targetMesh渲染，从而bone后面的bone也旋转
+        const ikCtl = new BABYLON.BoneIKController(rootMesh, rightForceArm, {
+            targetMesh: bigBall,
+            poleTargetMesh: poleTargetSmallBall,
+            poleAngle: Math.PI * 0.9,
+        });
+
+        ikCtl.maxAngle = Math.PI * 0.9;
+
+        gui.add(ikCtl, 'poleAngle', -Math.PI, Math.PI);
+        gui.add(ikCtl, 'maxAngle', 0, Math.PI);
+        gui.add(poleTargetSmallBall.position, 'x', -5, 5).name('pole  x');
+        gui.add(poleTargetSmallBall.position, 'y', -5, 5).name('pole  y');
+        gui.add(poleTargetSmallBall.position, 'z', -5, 5).name('pole  z');
+
+        gui.add(bigBall.position, 'x', -5, 5).name('bigBall x');
+        gui.add(bigBall.position, 'y', -5, 5).name(' bigBall y');
+        gui.add(bigBall.position, 'z', -5, 5).name(' bigBall z');
+        let t = 0;
+
+        scene.onBeforeRenderObservable.add(() => {
+            t += 0.01;
+
+            bigBall.position.x = 0.5;
+            bigBall.position.y = 1 + 2 * Math.sin(t);
+            bigBall.position.z = -1 + 2 * Math.cos(t);
+
+            ikCtl.update();
+
+            a.update();
+            b.update();
+        });
 
         // makePose(manager);
     });
+
+    // SceneLoader.ImportMesh('', 'https://playground.babylonjs.com/Scenes/Dude/', 'Dude.babylon', scene, function (newMeshes, particleSystems, skeletons) {
+    //     const dudeMesh = newMeshes[0] as Mesh;
+    //     const skeleton = skeletons[0];
+    //     dudeMesh.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+    //     dudeMesh.position = new BABYLON.Vector3(0, 0, 0);
+    //     console.log('aaa', skeleton.bones);
+
+    //     // scene.beginAnimation(skeletons[0], 0, 100, true, 1.0);
+    //     // const a = new BABYLON.BoneAxesViewer(scene, skeleton.bones[14], dudeMesh);
+    //     // const b = new BABYLON.BoneAxesViewer(scene, skeleton.bones[13], dudeMesh);
+    //     // scene.onBeforeRenderObservable.add(() => {
+    //     //     a.update();
+    //     //     b.update();
+    //     // });
+
+    //     // return;
+    //     let t = 0;
+
+    //     poleTargetSmallBall.position.x = 0;
+    //     poleTargetSmallBall.position.y = 100;
+    //     poleTargetSmallBall.position.z = -50;
+
+    //     bigBall.parent = dudeMesh;
+    //     poleTargetSmallBall.parent = dudeMesh;
+    //     // poleTargetSmallBall.setEnabled(false)
+
+    //     const ikCtl = new BABYLON.BoneIKController(dudeMesh, skeleton.bones[14], {
+    //         targetMesh: bigBall,
+    //         poleTargetMesh: poleTargetSmallBall,
+    //         poleAngle: Math.PI,
+    //     });
+
+    //     ikCtl.maxAngle = Math.PI * 0.9;
+
+    //     const bone1AxesViewer = new BABYLON.BoneAxesViewer(scene, skeleton.bones[14], dudeMesh);
+    //     const bone2AxesViewer = new BABYLON.BoneAxesViewer(scene, skeleton.bones[13], dudeMesh);
+
+    //     gui.add(ikCtl, 'poleAngle', -Math.PI, Math.PI);
+    //     gui.add(ikCtl, 'maxAngle', 0, Math.PI);
+    //     gui.add(poleTargetSmallBall.position, 'x', -100, 100).name('pole bigBall x');
+    //     gui.add(poleTargetSmallBall.position, 'y', -100, 100).name('pole bigBall y');
+    //     gui.add(poleTargetSmallBall.position, 'z', -100, 100).name('pole bigBall z');
+
+    //     scene.registerBeforeRender(function () {
+    //         const bone = skeleton.bones[14];
+
+    //         t += 0.03;
+
+    //         const dist = 2 + 12 * Math.sin(t);
+
+    //         bigBall.position.x = -20;
+    //         bigBall.position.y = 40 + 40 * Math.sin(t);
+    //         bigBall.position.z = -30 + 40 * Math.cos(t);
+
+    //         ikCtl.update();
+
+    //         //dudeMesh.rotation.y += .01;
+
+    //         bone1AxesViewer.update();
+    //         bone2AxesViewer.update();
+    //     });
+    // });
 
     const axes = new AxesViewer();
     // axes.update(new Vector3(2, 0, 0), Axis.X, Axis.Y, Axis.Z);
