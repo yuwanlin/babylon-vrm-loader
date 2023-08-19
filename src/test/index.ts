@@ -34,11 +34,25 @@ import {
     SkeletonViewer,
     AnimationPropertiesOverride,
     BoneIKController,
+    Observable as BJSObservable,
 } from '@babylonjs/core';
 import * as BABYLON from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, Slider, StackPanel, TextBlock, GUI3DManager, StackPanel3D, Button3D } from '@babylonjs/gui';
+import { Observable, filter, take, firstValueFrom, map } from 'rxjs';
 
 const { ToRadians, ToDegrees } = Tools;
+
+function fromBabylonObservable<T>(bjsObservable: BJSObservable<T>): Observable<T> {
+    return new Observable<T>((subscriber) => {
+        if (!(bjsObservable instanceof BJSObservable)) {
+            throw new TypeError('the object passed in must be a Babylon Observable');
+        }
+
+        const handler = bjsObservable.add((v) => subscriber.next(v));
+
+        return () => bjsObservable.remove(handler);
+    });
+}
 
 // @ts-ignore
 function localAxes(size, scene) {
@@ -145,151 +159,14 @@ async function main() {
         engine.resize();
     });
 
-    SceneLoader.AppendAsync('./', 'K-00510.vrm', scene).then((scene: Scene) => {
-        const poleTargetSmallBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.12 }, scene);
-        const gui = new dat.GUI();
-        gui.domElement.style.marginTop = '100px';
-        gui.domElement.id = 'datGUI';
-        const rootMesh = scene.getMeshByName('__root__')! as Mesh;
-        const rightHandMesh = scene.getTransformNodeByName('RightHand')!;
-        const bigBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.4 }, scene);
-        console.log('rightHandMesh', rightHandMesh);
-
-        const bone = scene.metadata.vrmManagers[0].humanoidBone;
-        // bone.rightLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
-        bone.leftLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
-        const skeleton = scene.getSkeletonById('skeleton0');
-
-        // 除以 50
-        poleTargetSmallBall.position.x = 0;
-        poleTargetSmallBall.position.y = 0.4;
-        poleTargetSmallBall.position.z = -1;
-        bigBall.parent = rootMesh;
-        rightHandMesh.parent = rootMesh;
-        poleTargetSmallBall.parent = rootMesh;
-
-        console.log('===', skeleton);
-        const rightForceArm = scene.getBoneByName('RightForeArm')!;
-        const rightArm = scene.getBoneByName('RightArm')!;
-
-        const a = new BABYLON.BoneAxesViewer(scene, rightForceArm, rootMesh, 0.2);
-        const b = new BABYLON.BoneAxesViewer(scene, rightArm, rootMesh, 0.2);
-
-        // 手臂跟着大球旋转，从而肩膀也旋转
-        // bone跟着targetMesh渲染，从而bone后面的bone也旋转
-        const ikCtl = new BABYLON.BoneIKController(rootMesh, rightForceArm, {
-            targetMesh: bigBall,
-            poleTargetMesh: poleTargetSmallBall,
-            poleAngle: Math.PI * 0.9,
-        });
-
-        ikCtl.maxAngle = Math.PI * 0.9;
-
-        gui.add(ikCtl, 'poleAngle', -Math.PI, Math.PI);
-        gui.add(ikCtl, 'maxAngle', 0, Math.PI);
-        gui.add(poleTargetSmallBall.position, 'x', -5, 5).name('pole  x');
-        gui.add(poleTargetSmallBall.position, 'y', -5, 5).name('pole  y');
-        gui.add(poleTargetSmallBall.position, 'z', -5, 5).name('pole  z');
-
-        gui.add(bigBall.position, 'x', -5, 5).name('bigBall x');
-        gui.add(bigBall.position, 'y', -5, 5).name(' bigBall y');
-        gui.add(bigBall.position, 'z', -5, 5).name(' bigBall z');
-        let t = 0;
-
-        scene.onBeforeRenderObservable.add(() => {
-            t += 0.01;
-
-            bigBall.position.x = 0.5;
-            bigBall.position.y = 1 + 2 * Math.sin(t);
-            bigBall.position.z = -1 + 2 * Math.cos(t);
-
-            ikCtl.update();
-
-            a.update();
-            b.update();
-        });
-
-        // makePose(manager);
-    });
-
-    // SceneLoader.ImportMesh('', 'https://playground.babylonjs.com/Scenes/Dude/', 'Dude.babylon', scene, function (newMeshes, particleSystems, skeletons) {
-    //     const dudeMesh = newMeshes[0] as Mesh;
-    //     const skeleton = skeletons[0];
-    //     dudeMesh.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
-    //     dudeMesh.position = new BABYLON.Vector3(0, 0, 0);
-    //     console.log('aaa', skeleton.bones);
-
-    //     // scene.beginAnimation(skeletons[0], 0, 100, true, 1.0);
-    //     // const a = new BABYLON.BoneAxesViewer(scene, skeleton.bones[14], dudeMesh);
-    //     // const b = new BABYLON.BoneAxesViewer(scene, skeleton.bones[13], dudeMesh);
-    //     // scene.onBeforeRenderObservable.add(() => {
-    //     //     a.update();
-    //     //     b.update();
-    //     // });
-
-    //     // return;
-    //     let t = 0;
-
-    //     poleTargetSmallBall.position.x = 0;
-    //     poleTargetSmallBall.position.y = 100;
-    //     poleTargetSmallBall.position.z = -50;
-
-    //     bigBall.parent = dudeMesh;
-    //     poleTargetSmallBall.parent = dudeMesh;
-    //     // poleTargetSmallBall.setEnabled(false)
-
-    //     const ikCtl = new BABYLON.BoneIKController(dudeMesh, skeleton.bones[14], {
-    //         targetMesh: bigBall,
-    //         poleTargetMesh: poleTargetSmallBall,
-    //         poleAngle: Math.PI,
-    //     });
-
-    //     ikCtl.maxAngle = Math.PI * 0.9;
-
-    //     const bone1AxesViewer = new BABYLON.BoneAxesViewer(scene, skeleton.bones[14], dudeMesh);
-    //     const bone2AxesViewer = new BABYLON.BoneAxesViewer(scene, skeleton.bones[13], dudeMesh);
-
-    //     gui.add(ikCtl, 'poleAngle', -Math.PI, Math.PI);
-    //     gui.add(ikCtl, 'maxAngle', 0, Math.PI);
-    //     gui.add(poleTargetSmallBall.position, 'x', -100, 100).name('pole bigBall x');
-    //     gui.add(poleTargetSmallBall.position, 'y', -100, 100).name('pole bigBall y');
-    //     gui.add(poleTargetSmallBall.position, 'z', -100, 100).name('pole bigBall z');
-
-    //     scene.registerBeforeRender(function () {
-    //         const bone = skeleton.bones[14];
-
-    //         t += 0.03;
-
-    //         const dist = 2 + 12 * Math.sin(t);
-
-    //         bigBall.position.x = -20;
-    //         bigBall.position.y = 40 + 40 * Math.sin(t);
-    //         bigBall.position.z = -30 + 40 * Math.cos(t);
-
-    //         ikCtl.update();
-
-    //         //dudeMesh.rotation.y += .01;
-
-    //         bone1AxesViewer.update();
-    //         bone2AxesViewer.update();
-    //     });
-    // });
-
-    const axes = new AxesViewer();
-    // axes.update(new Vector3(2, 0, 0), Axis.X, Axis.Y, Axis.Z);
+    let leftHand: WebXRHand;
+    let rightHand: WebXRHand;
+    let initialRightHandWristPosition: Vector3;
 
     // @ts-ignore
     await window.Ammo().catch((err) => alert(err));
     scene.enablePhysics(undefined, new AmmoJSPlugin());
     const xr = await scene.createDefaultXRExperienceAsync();
-
-    const xrHeader = xr.baseExperience.camera;
-
-    // xr.input.onControllerAddedObservable.add((inputSource) => {
-    //     inputSource.onMotionControllerInitObservable.add((motionController) => {
-    //         console.log('=======handness', motionController, xr.input.controllers[0]);
-    //     });
-    // });
 
     const xrHandFeature = xr.baseExperience.featuresManager.enableFeature(WebXRFeatureName.HAND_TRACKING, 'latest', {
         xrInput: xr.input,
@@ -299,17 +176,6 @@ async function main() {
         },
     }) as unknown as WebXRHandTracking;
 
-    // scene.onPointerObservable.add((evt) => {
-    //     const pointerId = (evt.event as any).pointerId;
-
-    //     const xrController = xr.pointerSelection.getXRControllerByPointerId(pointerId);
-    //     // const webXrHand = xrHandFeature.getHandByControllerId(xrController!.uniqueId);
-    //     // webXrHand;
-    //     // console.log('=======', xrController?.uniqueId);
-    // });
-    let leftHand: WebXRHand;
-    let rightHand: WebXRHand;
-
     xrHandFeature.onHandAddedObservable.add((newHand: WebXRHand) => {
         const vrmManager = scene.metadata.vrmManagers[0];
         const handedness = newHand.xrController.inputSource.handedness as XRHandedness;
@@ -318,8 +184,151 @@ async function main() {
             leftHand = newHand;
         } else {
             rightHand = newHand;
+            fromBabylonObservable(scene.onBeforeRenderObservable)
+                .pipe(
+                    filter(() => {
+                        return rightHand.getJointMesh(WebXRHandJoint.WRIST).position.x !== 0;
+                    }),
+                    map(() => rightHand.getJointMesh(WebXRHandJoint.WRIST).position),
+                    take(1)
+                )
+                .subscribe((v) => {
+                    initialRightHandWristPosition = v.clone();
+                });
         }
     });
+
+    xr.baseExperience.sessionManager.onXRSessionEnded.add(() => {});
+    SceneLoader.AppendAsync('./', 'K-00510.vrm', scene).then((scene: Scene) => {
+        const poleTargetSmallBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.12 }, scene);
+        const gui = new dat.GUI();
+        console.log('fadfdas', scene.metadata.vrmManagers[0]);
+        gui.domElement.style.marginTop = '100px';
+        gui.domElement.id = 'datGUI';
+        const rootMesh = scene.getMeshByName('__root__')! as Mesh;
+        const bigBall = BABYLON.MeshBuilder.CreateSphere('', { diameter: 0.1 }, scene);
+
+        // 手肘
+        const rightForeArm = scene.getTransformNodeByName('RightForeArm')!;
+        // 头
+        const head = scene.getTransformNodeByName('Head')!;
+
+        const xrHeader = xr.baseExperience.camera;
+        let initialXrHeaderPosition: Vector3;
+
+        // bone.rightLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        // bone.leftLowerArm.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        // const pos = rightHandMesh.getAbsolutePosition();
+        // console.log('pos绝对位置：', pos, '相对位置：', rightHandMesh.position);
+
+        poleTargetSmallBall.position.x = 0.43;
+        poleTargetSmallBall.position.y = 1.48;
+        poleTargetSmallBall.position.z = -0.14;
+
+        const initialModalForeArmPosition = rightForeArm.getAbsolutePosition().clone();
+        bigBall.position = initialModalForeArmPosition.clone();
+        const bigBallStartZ = -0.2;
+        bigBall.position.z = bigBallStartZ;
+
+        // bigBall.position
+        console.log('绝对位置', initialModalForeArmPosition);
+
+        const ikCtl = new BABYLON.BoneIKController(rootMesh, scene.getBoneByName('RightForeArm')!, {
+            // targetMesh: rightHandMesh,
+            targetMesh: bigBall,
+            poleTargetMesh: poleTargetSmallBall,
+            poleAngle: Math.PI * 0.9,
+        });
+
+        gui.add(ikCtl, 'poleAngle', -Math.PI, Math.PI);
+        gui.add(ikCtl, 'maxAngle', 0, Math.PI);
+        ikCtl.maxAngle = Math.PI;
+
+        let ratio = 0;
+        scene.onBeforeRenderObservable.add(() => {
+            ikCtl.update();
+            if (xrHeader.position.x === 0 && xrHeader.position.y === 0 && xrHeader.position.z === 0) {
+                return;
+            }
+            if (!initialXrHeaderPosition) {
+                initialXrHeaderPosition = xrHeader.position.clone();
+            }
+            if (!initialRightHandWristPosition) return;
+
+            const headerOffset = xrHeader.position.x - initialXrHeaderPosition.x;
+            // head.position.x = initialModalHeaderPosition.x + headerOffset * ratio;
+
+            const rightHandWristPosition = rightHand.getJointMesh(WebXRHandJoint.WRIST).position;
+            const headerPosition = head.getAbsolutePosition();
+
+            /**
+             * 1. 计算真人初始手腕位置与头部位置的距离，这是个总距离 lp
+             * 2. 计算模型初始手腕位置与头部位置的距离，这是个总距离 lm
+             * 3. 计算真人的实时手腕位置，这个是lpt
+             * 4. 计算真人手腕移动距离，这个是lp - lpt，即lpDelta
+             * 5. 计算模型手腕初始位置，这个是x1
+             * 6. 计算模型手腕最终位置，这个是x2
+             */
+
+            const lp = initialRightHandWristPosition.x - xrHeader.position.x;
+            // 对头部进行补偿，这是因为模型的头没变化。如果模型的头部实时变化，这里就不需要补偿了。但是如果直接修改headerPosition.x，那么模型的头部变化很奇怪。而且ratio也不能直接应用在头部x上，可能模型头部比例和头到手臂的比例不一样。
+            const lm = initialModalForeArmPosition.x - (headerPosition.x - headerOffset * ratio);
+            ratio = Math.abs(lm / lp);
+            const ratioY = Math.abs((initialModalForeArmPosition.y - headerPosition.y) / (initialRightHandWristPosition.y - xrHeader.position.y));
+            const ratioZ = Math.abs((initialModalForeArmPosition.z - headerPosition.z) / (initialRightHandWristPosition.z - xrHeader.position.z));
+
+            const lpt = rightHandWristPosition.x;
+            const lpDelta = initialRightHandWristPosition.x - lpt + xrHeader.position.x - initialXrHeaderPosition.x;
+            const x1 = initialModalForeArmPosition.x;
+            const x2 = x1 + lpDelta * ratio;
+
+            // 模型手腕初始位置：${x1.toFixed(2)}
+            // 模型手腕最终位置：x1 + lpDelta * ratio; ${x2.toFixed(2)}
+
+            const y1 = initialModalForeArmPosition.y;
+            const y2 = y1 + (rightHandWristPosition.y - initialRightHandWristPosition.y) * ratioY;
+            const z1 = initialModalForeArmPosition.z;
+            const z2 = z1 - (rightHandWristPosition.z - initialRightHandWristPosition.z) * ratioZ;
+            setContent(`
+
+                模型手z：${initialModalForeArmPosition.z.toFixed(2)}
+                模型头部z：${headerPosition.z.toFixed(2)}
+                真人手z：${rightHandWristPosition.z.toFixed(2)}
+                真人头部z：${xrHeader.position.z.toFixed(2)}
+                ratioz: ${ratioZ.toFixed(2)}
+                真人z偏移：${rightHandWristPosition.z - initialRightHandWristPosition.z}
+                `);
+            bigBall.position.x = x2;
+            bigBall.position.y = y2;
+            bigBall.position.z = z2 + bigBallStartZ;
+
+            // if (!prevPersonWristPosition) {
+            //     prevPersonWristPosition = rightHand.getJointMesh(WebXRHandJoint.WRIST).position.clone();
+            // } else {
+            //     const rightHandPosition = rightHand.getJointMesh(WebXRHandJoint.WRIST).position.clone();
+
+            //     const deltaPos = rightHandPosition.subtract(prevPersonWristPosition);
+
+            //     // bigBall.position.addInPlace(deltaPos);
+
+            //     prevPersonWristPosition = rightHandPosition.clone();
+            // }
+
+            return;
+
+            // bone['rightHand'].position.y += 0.01;
+            // bone['rightHand'].position.z = Math.cos(t) * 0.1;
+            // bone['rightThumbProximal'].position.y = -0.2;
+            // bone['rightThumbProximal'].position.z = -0.2;
+
+            // a.update();
+            // b.update();
+        });
+
+        // makePose(manager);
+    });
+
+    const axes = new AxesViewer();
 
     const manager = new GUI3DManager(scene);
 
@@ -343,6 +352,7 @@ async function main() {
         text1.color = 'white';
         text1.fontSize = 12;
         button.content = text1;
+        button.position.z = 2;
         button.position.y = 0.5;
         button.scaling = new Vector3(0.5, 0.5, 0.5);
 
@@ -350,9 +360,10 @@ async function main() {
             text1.text = text2;
         };
 
-        // setContent('222');
         return setContent;
     };
+
+    const setContent = addButton();
 
     function getAngle(originMesh: TransformNode, mesh1: TransformNode, mesh2: TransformNode) {
         const line1 = originMesh.position.subtract(mesh1.position);
@@ -519,7 +530,17 @@ async function main() {
         const wristEa = wristMesh0.rotationQuaternion?.toEulerAngles()!;
         // 手腕
         {
-            bone['rightHand'].rotationQuaternion = Quaternion.FromEulerAngles(-wristEa.z, -wristEa.y, -wristEa.x);
+            // let zAngle = -wristEa.x;
+            // zAngle = zAngle > Math.PI / 2 ? Math.PI / 2 : zAngle < 0 ? 0 : zAngle;
+            // let yAngle = -wristEa.y;
+            // yAngle = yAngle > Math.PI / 2 ? Math.PI / 2 : yAngle < 0 ? 0 : yAngle;
+            // let xAngle = -wristEa.z;
+            // xAngle = xAngle > Math.PI / 2 ? Math.PI / 2 : xAngle < 0 ? 0 : xAngle;
+            // setContent(`
+            //     手腕角度x, y, z：${ToDegrees(wristEa.x).toFixed(2)}, ${ToDegrees(wristEa.y).toFixed(2)}, ${ToDegrees(wristEa.z).toFixed(2)}
+            //     bone['rightHand'].rotationQuaternion = Quaternion.FromEulerAngles(-wristEa.z, -wristEa.y, -wristEa.x);
+            // `);
+            // bone['rightHand'].rotationQuaternion = Quaternion.FromEulerAngles(-wristEa.z - Math.PI / 2, -wristEa.y, -wristEa.x);
         }
         // 拇指
         {
